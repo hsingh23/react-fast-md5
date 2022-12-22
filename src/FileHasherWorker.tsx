@@ -46,14 +46,13 @@ function calculateMD5Hook() {
           worker.removeEventListener("message", onMessage);
           worker.removeEventListener("error", onError);
           worker.terminate();
-          worker = null;
         });
         return [];
       });
     };
   }, []);
 
-  const calculateMD5 = useCallback(
+  const calculateMD5 = useCallback<(files: FileList) => void>(
     (files: FileList) => {
       for (let i = 0; i < files.length; i++) {
         workers[i % NUM_WORKERS].postMessage({
@@ -64,20 +63,28 @@ function calculateMD5Hook() {
     },
     [workers]
   );
-  return [fileInfos, calculateMD5];
+  // define the type as a tuple
+  const result: [FileInfo[], (files: FileList) => void] = [
+    fileInfos,
+    calculateMD5,
+  ];
+  return result;
 }
 
 function FileHasher() {
-  const [fileInfos, calculateMD5] = calculateMD5Hook();
+  const [fileInfos, calculateMD5]: [FileInfo[], (files: FileList) => void] =
+    calculateMD5Hook();
 
   return (
     <div>
-       <input
+      <input
         type="file"
         multiple
-        onChange={(event) => calculateMD5(event.target.files)}
+        onChange={(event) =>
+          event.target.files && calculateMD5(event.target.files)
+        }
       />
-      
+
       {fileInfos.map((fileInfo) => (
         <div key={fileInfo.name}>
           <p>
@@ -86,8 +93,6 @@ function FileHasher() {
           </p>
         </div>
       ))}
-
-     
     </div>
   );
 }
